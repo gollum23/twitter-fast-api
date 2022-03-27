@@ -10,7 +10,7 @@ from models.user import User, UserRegister, UserLoginOut
 app = FastAPI()
 
 USERS_FILE = 'users.json'
-TWEETS_FILE ='tweets.json'
+TWEETS_FILE = 'tweets.json'
 USER_NOT_FOUND = 'User not found'
 TWEET_NOT_FOUND = 'Tweet not found'
 
@@ -170,14 +170,12 @@ def show_user_detail(user_id: str = Path(...)):
             (user for user in users if user['user_id'] == user_id),
             None,
         )
-        if valid_user:
-            response = valid_user
-        else:
+        if not valid_user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=USER_NOT_FOUND
             )
 
-        return response
+        return valid_user
 
 
 @app.delete(
@@ -205,16 +203,16 @@ def delete_user(user_id: str = Path(...)):
             (user for user in users if user['user_id'] == user_id),
             None,
         )
-        if valid_user:
-            f.close()
-            users.remove(valid_user)
-            with open(USERS_FILE, 'w', encoding='utf-8') as f:
-                f.seek(0)
-                f.write(json.dumps(users))
-        else:
+        if not valid_user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=USER_NOT_FOUND
             )
+
+        f.close()
+        users.remove(valid_user)
+        with open(USERS_FILE, 'w', encoding='utf-8') as f:
+            f.seek(0)
+            f.write(json.dumps(users))
 
 
 @app.patch(
@@ -252,22 +250,22 @@ def update_user(user_id: str = Path(...), user: User = Body(...)):
             (user for user in users if user['user_id'] == user_id),
             None,
         )
-        if valid_user:
-            f.close()
-            new_user_data = user.dict(exclude_unset=True)
-            original_data = User(**valid_user)
-            original_data = original_data.copy(update=new_user_data).dict()
-            original_data['user_id'] = str(original_data['user_id'])
-            original_data['birthday'] = str(original_data['birthday'])
-            users[users.index(valid_user)] = original_data
-            with open(USERS_FILE, 'w', encoding='utf-8') as f:
-                f.seek(0)
-                f.write(json.dumps(users))
-            return original_data
-        else:
+        if not valid_user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail=USER_NOT_FOUND
             )
+
+        f.close()
+        new_user_data = user.dict(exclude_unset=True)
+        original_data = User(**valid_user)
+        original_data = original_data.copy(update=new_user_data).dict()
+        original_data['user_id'] = str(original_data['user_id'])
+        original_data['birthday'] = str(original_data['birthday'])
+        users[users.index(valid_user)] = original_data
+        with open(USERS_FILE, 'w', encoding='utf-8') as f:
+            f.seek(0)
+            f.write(json.dumps(users))
+        return original_data
 
 
 ## Tweets
