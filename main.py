@@ -9,6 +9,11 @@ from models.user import User, UserRegister, UserLoginOut
 
 app = FastAPI()
 
+USERS_FILE = 'users.json'
+TWEETS_FILE ='tweets.json'
+USER_NOT_FOUND = 'User not found'
+TWEET_NOT_FOUND = 'Tweet not found'
+
 
 ## Users
 @app.post(
@@ -41,7 +46,7 @@ def signup(user: UserRegister = Body(...)):
             - last_name: str
             - birth_date: date
     """
-    with open('users.json', 'r+', encoding='utf-8') as f:
+    with open(USERS_FILE, 'r+', encoding='utf-8') as f:
         results = json.loads(f.read())
         user_dict = user.dict()
         user_dict['user_id'] = str(user_dict['user_id'])
@@ -79,7 +84,7 @@ def login(email: EmailStr = Form(...), password: str = Form(...)):
             - user_id: UUID
             - message: str
     """
-    with open('users.json', 'r', encoding='utf-8') as f:
+    with open(USERS_FILE, 'r', encoding='utf-8') as f:
         users = json.loads(f.read())
         valid_user = next(
             (
@@ -125,7 +130,7 @@ def show_all_users():
             - last_name: str
             - birth_date: date
     """
-    with open('users.json', 'r+', encoding='utf-8') as f:
+    with open(USERS_FILE, 'r+', encoding='utf-8') as f:
         results = json.loads(f.read())
         return results
 
@@ -158,7 +163,7 @@ def show_user_detail(user_id: str = Path(...)):
             - birth_date: date
 
     """
-    with open('users.json', 'r', encoding='utf-8') as f:
+    with open(USERS_FILE, 'r', encoding='utf-8') as f:
         users = json.loads(f.read())
 
         valid_user = next(
@@ -169,7 +174,7 @@ def show_user_detail(user_id: str = Path(...)):
             response = valid_user
         else:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail='User not found'
+                status_code=status.HTTP_404_NOT_FOUND, detail=USER_NOT_FOUND
             )
 
         return response
@@ -193,7 +198,7 @@ def delete_user(user_id: str = Path(...)):
 
     Not return
     """
-    with open('users.json', 'r+', encoding='utf-8') as f:
+    with open(USERS_FILE, 'r+', encoding='utf-8') as f:
         users = json.loads(f.read())
 
         valid_user = next(
@@ -203,12 +208,12 @@ def delete_user(user_id: str = Path(...)):
         if valid_user:
             f.close()
             users.remove(valid_user)
-            with open('users.json', 'w', encoding='utf-8') as f:
+            with open(USERS_FILE, 'w', encoding='utf-8') as f:
                 f.seek(0)
                 f.write(json.dumps(users))
         else:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail='User not found'
+                status_code=status.HTTP_404_NOT_FOUND, detail=USER_NOT_FOUND
             )
 
 
@@ -240,7 +245,7 @@ def update_user(user_id: str = Path(...), user: User = Body(...)):
             - last_name: str
             - birth_date: date
     """
-    with open('users.json', 'r+', encoding='utf-8') as f:
+    with open(USERS_FILE, 'r+', encoding='utf-8') as f:
         users = json.loads(f.read())
 
         valid_user = next(
@@ -255,13 +260,13 @@ def update_user(user_id: str = Path(...), user: User = Body(...)):
             original_data['user_id'] = str(original_data['user_id'])
             original_data['birthday'] = str(original_data['birthday'])
             users[users.index(valid_user)] = original_data
-            with open('users.json', 'w', encoding='utf-8') as f:
+            with open(USERS_FILE, 'w', encoding='utf-8') as f:
                 f.seek(0)
                 f.write(json.dumps(users))
             return original_data
         else:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail='User not found'
+                status_code=status.HTTP_404_NOT_FOUND, detail=USER_NOT_FOUND
             )
 
 
@@ -332,7 +337,7 @@ def post(tweet: Tweet = Body(...)):
             - updated_at: datetime
             - author: User
     """
-    with open('tweets.json', 'r+', encoding='utf-8') as f:
+    with open(TWEETS_FILE, 'r+', encoding='utf-8') as f:
         results = json.loads(f.read())
         tweet_dict = tweet.dict()
         tweet_dict['tweet_id'] = str(tweet_dict['tweet_id'])
@@ -377,7 +382,7 @@ def show_tweet_detail(tweet_id: str = Path(...)):
             - author: User
 
     """
-    with open('tweets.json', 'r', encoding='utf-8') as f:
+    with open(TWEETS_FILE, 'r', encoding='utf-8') as f:
         tweets = json.loads(f.read())
 
         valid_tweet = next(
@@ -386,7 +391,7 @@ def show_tweet_detail(tweet_id: str = Path(...)):
         )
         if not valid_tweet:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail='User not found'
+                status_code=status.HTTP_404_NOT_FOUND, detail=TWEET_NOT_FOUND
             )
 
         return valid_tweet
@@ -410,7 +415,7 @@ def delete_tweet(tweet_id: str = Path(...)):
 
     Not return
     """
-    with open('tweets.json', 'r+', encoding='utf-8') as f:
+    with open(TWEETS_FILE, 'r+', encoding='utf-8') as f:
         tweets = json.loads(f.read())
 
         valid_tweet = next(
@@ -419,12 +424,12 @@ def delete_tweet(tweet_id: str = Path(...)):
         )
         if not valid_tweet:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail='User not found'
+                status_code=status.HTTP_404_NOT_FOUND, detail=TWEET_NOT_FOUND
             )
 
         f.close()
         tweets.remove(valid_tweet)
-        with open('tweets.json', 'w', encoding='utf-8') as f:
+        with open(TWEETS_FILE, 'w', encoding='utf-8') as f:
             f.seek(0)
             f.write(json.dumps(tweets))
 
@@ -457,7 +462,7 @@ def update_tweet(tweet_id: str = Path(...), tweet: Tweet = Body(...)):
             - updated_at: datetime
             - author: User
     """
-    with open('tweets.json', 'r+', encoding='utf-8') as f:
+    with open(TWEETS_FILE, 'r+', encoding='utf-8') as f:
         tweets = json.loads(f.read())
 
         valid_tweet = next(
@@ -466,7 +471,7 @@ def update_tweet(tweet_id: str = Path(...), tweet: Tweet = Body(...)):
         )
         if not valid_tweet:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail='User not found'
+                status_code=status.HTTP_404_NOT_FOUND, detail=TWEET_NOT_FOUND
             )
 
         f.close()
@@ -483,7 +488,7 @@ def update_tweet(tweet_id: str = Path(...), tweet: Tweet = Body(...)):
             original_data['author']['birthday']
         )
         tweets[tweets.index(valid_tweet)] = original_data
-        with open('tweets.json', 'w', encoding='utf-8') as f:
+        with open(TWEETS_FILE, 'w', encoding='utf-8') as f:
             f.seek(0)
             f.write(json.dumps(tweets))
 
