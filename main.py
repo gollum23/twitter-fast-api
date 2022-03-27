@@ -356,27 +356,135 @@ def post(tweet: Tweet = Body(...)):
     summary='Show a Tweet data',
     tags=['Tweets'],
 )
-def show_tweet_detail():
-    ...
+def show_tweet_detail(tweet_id: str = Path(...)):
+    """
+    # Show tweet detail
+
+    This path operation return a tweet detail by id
+
+    Parameters:
+
+    - tweet_id: str
+
+    Return a json with user detail data:
+
+    - Response model
+        - user: Tweet
+            - tweet_id: UUID
+            - content: str
+            - created_at: datetime
+            - updated_at: datetime
+            - author: User
+
+    """
+    with open('tweets.json', 'r', encoding='utf-8') as f:
+        tweets = json.loads(f.read())
+
+        valid_tweet = next(
+            (tweet for tweet in tweets if tweet['tweet_id'] == tweet_id),
+            None,
+        )
+        if not valid_tweet:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail='User not found'
+            )
+
+        return valid_tweet
 
 
 @app.delete(
     '/tweets/{tweet_id}/delete',
-    response_model=Tweet,
-    status_code=status.HTTP_200_OK,
+    status_code=status.HTTP_204_NO_CONTENT,
     summary='Delete a Tweet',
     tags=['Tweets'],
 )
-def delete_tweet():
-    ...
+def delete_tweet(tweet_id: str = Path(...)):
+    """
+    # Delete a tweet
+
+    This path operation delete a tweet by id
+
+    Parameters:
+
+    - tweet_id: str
+
+    Not return
+    """
+    with open('tweets.json', 'r+', encoding='utf-8') as f:
+        tweets = json.loads(f.read())
+
+        valid_tweet = next(
+            (tweet for tweet in tweets if tweet['tweet_id'] == tweet_id),
+            None,
+        )
+        if not valid_tweet:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail='User not found'
+            )
+
+        f.close()
+        tweets.remove(valid_tweet)
+        with open('tweets.json', 'w', encoding='utf-8') as f:
+            f.seek(0)
+            f.write(json.dumps(tweets))
 
 
-@app.put(
+@app.patch(
     '/tweets/{tweet_id}/update',
     response_model=Tweet,
     status_code=status.HTTP_200_OK,
     summary='update a Tweet',
     tags=['Tweets'],
 )
-def update_tweet():
-    ...
+def update_tweet(tweet_id: str = Path(...), tweet: Tweet = Body(...)):
+    """
+    # Update a tweet
+
+    This path operation update a tweet data by id
+
+    Parameters:
+
+    - tweet_id: str
+    - tweet: Tweet
+
+    Return a json with tweet detail data:
+
+    - Response model
+        - user: Tweet
+            - tweet_id: UUID
+            - content: str
+            - created_at: datetime
+            - updated_at: datetime
+            - author: User
+    """
+    with open('tweets.json', 'r+', encoding='utf-8') as f:
+        tweets = json.loads(f.read())
+
+        valid_tweet = next(
+            (tweet for tweet in tweets if tweet['tweet_id'] == tweet_id),
+            None,
+        )
+        if not valid_tweet:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail='User not found'
+            )
+
+        f.close()
+        new_tweet_data = tweet.dict(exclude_unset=True)
+        original_data = Tweet(**valid_tweet)
+        original_data = original_data.copy(update=new_tweet_data).dict()
+        original_data['tweet_id'] = str(original_data['tweet_id'])
+        original_data['created_at'] = str(original_data['created_at'])
+        original_data['updated_at'] = str(original_data['updated_at'])
+        original_data['author']['user_id'] = str(
+            original_data['author']['user_id']
+        )
+        original_data['author']['birthday'] = str(
+            original_data['author']['birthday']
+        )
+        tweets[tweets.index(valid_tweet)] = original_data
+        with open('tweets.json', 'w', encoding='utf-8') as f:
+            f.seek(0)
+            f.write(json.dumps(tweets))
+
+        return original_data
