@@ -18,6 +18,11 @@ class UserLogin(UserBase):
     )
 
 
+class UserLoginOut(UserBase):
+    user_id: Optional[str]
+    message: str = Field(default='Login successfully')
+
+
 class User(UserBase):
     first_name: str = Field(
         ...,
@@ -30,3 +35,7 @@ class User(UserBase):
         max_length=50,
     )
     birthday: Optional[date]
+
+
+class UserRegister(User, UserLogin):
+    ...
